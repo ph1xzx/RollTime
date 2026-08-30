@@ -12,7 +12,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Readable } = require('stream');
 
-const UP_DIR = path.join(__dirname, '..', 'data', 'uploads');
+const UP_DIR = path.join(process.env.VERCEL ? '/tmp' : path.join(__dirname, '..'), 'data', 'uploads');
 
 class LocalStorage {
   constructor() { fs.mkdirSync(UP_DIR, { recursive: true }); }
