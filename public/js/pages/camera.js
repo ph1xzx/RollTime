@@ -37,16 +37,20 @@ tickStamp(); setInterval(tickStamp, 30000);
 /* ---- kamera ---- */
 const engine = new CameraEngine($('#glCanvas'));
 engine.onError = () => { showMsg(t('cam.allow'), true); };
-engine.effectId = roll.filter_id ?? 1;
+// efek yg boleh dipakai = subset pilihan host (kalau 1 → kamera terkunci di preset itu)
+const allowedFx = (Array.isArray(roll.filter_ids) && roll.filter_ids.length)
+  ? roll.filter_ids : EFFECTS.map(f => f.id);
+engine.effectId = allowedFx.includes(roll.filter_id) ? roll.filter_id : allowedFx[0];
 const camOk = await engine.start('environment');
 if (!camOk) showMsg(t('cam.allow') + ' ' + t('cam.hint'), true);
 
 renderShots();
 if (shotsLeft <= 0) showDone();
 
-/* ---- fx row ---- */
+/* ---- fx row (hanya efek yg dipilih host; disembunyikan kalau cuma 1) ---- */
 const row = $('#fxRow');
-row.innerHTML = EFFECTS.map(f =>
+if (allowedFx.length <= 1) row.style.display = 'none';
+row.innerHTML = EFFECTS.filter(f => allowedFx.includes(f.id)).map(f =>
   `<button class="${f.id === engine.effectId ? 'on' : ''}" data-fx="${f.id}">${t('fx.' + f.key)}</button>`).join('');
 row.querySelectorAll('button').forEach(b => b.onclick = () => {
   engine.setEffect(+b.dataset.fx);

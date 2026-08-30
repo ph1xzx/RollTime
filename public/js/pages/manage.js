@@ -16,7 +16,8 @@ try {
 
 const guestUrl = `${location.origin}/e/${ev.code}`;
 $('#evName').textContent = ev.name;
-$('#evMeta').textContent = `${ev.type} · ${ev.shots_per_guest} shots/guest · fx#${ev.filter_id} · ${new URLSearchParams(location.search).has('fresh') ? '★ baru aja dibuat' : ''}`;
+const fxN = (Array.isArray(ev.filter_ids) && ev.filter_ids.length) ? ev.filter_ids.length : 1;
+$('#evMeta').textContent = `${ev.type} · ${ev.shots_per_guest} shots/guest · ${fxN > 1 ? fxN + ' efek' : 'fx#' + ev.filter_id} · ${new URLSearchParams(location.search).has('fresh') ? '★ baru aja dibuat' : ''}`;
 $('#qrImg').src = `/api/qr.svg?text=${encodeURIComponent(guestUrl)}`;
 $('#qrCode').textContent = `/e/${ev.code}`;
 $('#linkInput').value = guestUrl;

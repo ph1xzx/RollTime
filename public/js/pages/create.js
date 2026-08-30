@@ -10,7 +10,7 @@ if (!api.token) { location.href = '/auth?next=' + encodeURIComponent('/create');
 else { try { await api.req('/api/me'); } catch (e) { api.setToken(null); location.href = '/auth?next=/create'; } }
 
 const $ = s => document.querySelector(s);
-const state = { type: 'party', filter_id: 1, shots: 10 };
+const state = { type: 'party', filter_ids: [1], shots: 10 };
 let step = 0;
 
 /* tipe acara */
@@ -25,14 +25,21 @@ function renderTypes() {
   });
 }
 
-/* efek pick */
+/* efek pick — multi select (min 1; urutan pertama = default tamu) */
 function renderFxPick() {
-  $('#fxRow').innerHTML = EFFECTS.map(f => `
-    <div class="fx-pick ${state.filter_id === f.id ? 'on' : ''}" data-fx="${f.id}">
-      <span class="sw" style="background:${f.chip}"></span>${t('fx.' + f.key)}
-    </div>`).join('');
+  $('#fxRow').innerHTML = EFFECTS.map(f => {
+    const idx = state.filter_ids.indexOf(f.id);
+    const on = idx >= 0;
+    return `<div class="fx-pick ${on ? 'on' : ''}" data-fx="${f.id}">
+      <span class="sw" style="background:${f.chip}"></span>${t('fx.' + f.key)}${on && state.filter_ids.length > 1 ? ` <b style="color:var(--orange)">${idx + 1}</b>` : ''}
+    </div>`;
+  }).join('');
   document.querySelectorAll('.fx-pick').forEach(p => p.onclick = () => {
-    state.filter_id = +p.dataset.fx; renderFxPick();
+    const id = +p.dataset.fx;
+    const i = state.filter_ids.indexOf(id);
+    if (i >= 0) { if (state.filter_ids.length > 1) state.filter_ids.splice(i, 1); }
+    else state.filter_ids.push(id);
+    renderFxPick();
   });
 }
 
@@ -91,7 +98,8 @@ $('#btnCreate').onclick = async () => {
         starts_at: new Date($('#fStart').value).toISOString(),
         ends_at: endsAt.toISOString(),
         reveal_mode, reveal_at: reveal_at ? reveal_at.toISOString() : undefined,
-        filter_id: state.filter_id,
+        filter_id: state.filter_ids[0],
+        filter_ids: state.filter_ids,
         shots_per_guest: state.shots,
       },
     });

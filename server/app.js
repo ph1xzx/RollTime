@@ -62,9 +62,10 @@ function eventState(ev) {
 }
 function publicEvent(ev, counts) {
   const st = eventState(ev);
+  const fids = Array.isArray(ev.filter_ids) && ev.filter_ids.length ? ev.filter_ids : [ev.filter_id ?? 1];
   return {
     code: ev.code, name: ev.name, type: ev.type,
-    filter_id: ev.filter_id, shots_per_guest: ev.shots_per_guest,
+    filter_id: ev.filter_id, filter_ids: fids, shots_per_guest: ev.shots_per_guest,
     starts_at: ev.starts_at, ends_at: ev.ends_at, reveal_at: ev.reveal_at,
     ...st, counts,
   };
@@ -122,14 +123,30 @@ app.post('/api/events', async (req, res) => {
     if (b.reveal_mode === 'instant') reveal = starts;
     else if (b.reveal_mode === 'custom' && b.reveal_at) reveal = new Date(b.reveal_at);
     else reveal = new Date(ends.getTime() + 2 * 3600e3); // default: 2 jam setelah acara
-    const ev = await db.createEvent({
+    // multi-efek: filter_ids = daftar efek yg dipilih host (min 1), filter_id = default (elemen pertama)
+    let fids = Array.isArray(b.filter_ids)
+      ? b.filter_ids.map(x => parseInt(x, 10)).filter(x => Number.isInteger(x) && x >= 0 && x <= 14)
+      : [];
+    fids = [...new Set(fids)];
+    if (fids.length === 0) fids = [Math.max(0, Math.min(14, parseInt(b.filter_id ?? 1, 10))) || 1];
+    const evData = {
       code, owner_id: user.id,
       name: String(b.name || 'Acara').slice(0, 80),
       type: String(b.type || 'party'),
-      filter_id: Math.max(0, Math.min(14, parseInt(b.filter_id ?? 1, 10))),
+      filter_id: fids[0], filter_ids: fids,
       shots_per_guest: Math.max(1, Math.min(99, parseInt(b.shots_per_guest ?? 10, 10))),
       starts_at: starts.toISOString(), ends_at: ends.toISOString(), reveal_at: reveal.toISOString(),
-    });
+    };
+    let ev;
+    try {
+      ev = await db.createEvent(evData);
+    } catch (e1) {
+      // fallback: DB lama belum punya kolom filter_ids → simpan tanpa kolom itu
+      if (String(e1.detail || '').includes('filter_ids')) {
+        delete evData.filter_ids;
+        ev = await db.createEvent(evData);
+      } else throw e1;
+    }
     ok(res, { event: publicEvent(ev, { guests: 0, photos: 0 }) });
   } catch (e) {
     if (e.code === 'code_taken' || (e.detail || '').includes('duplicate')) return fail(res, 'code_taken', '', 409);
@@ -199,7 +216,7 @@ app.get('/api/events/:code/roll', async (req, res) => {
   if (!ev) return fail(res, 'not_found', '', 404);
   const g = await authGuest(req);
   if (!g || g.event_id !== ev.id) return fail(res, 'unauthorized', '', 401);
-  ok(res, { guest: { name: g.name, shots_used: g.shots_used }, shots_per_guest: ev.shots_per_guest, filter_id: ev.filter_id, ...eventState(ev) });
+  ok(res, { guest: { name: g.name, shots_used: g.shots_used }, shots_per_guest: ev.shots_per_guest, filter_id: ev.filter_id, filter_ids: Array.isArray(ev.filter_ids) && ev.filter_ids.length ? ev.filter_ids : [ev.filter_id ?? 1], ...eventState(ev) });
 });
 
 /* ---------------- photos ---------------- */

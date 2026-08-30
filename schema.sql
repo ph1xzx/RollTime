@@ -17,6 +17,7 @@ create table if not exists rt_events (
   name text not null,
   type text not null default 'party',
   filter_id int not null default 1,
+  filter_ids jsonb not null default '[]'::jsonb,   -- multi-efek pilihan host (filter_id = default)
   shots_per_guest int not null default 10,
   starts_at timestamptz not null,
   ends_at timestamptz not null,
@@ -46,6 +47,10 @@ create table if not exists rt_photos (
 
 create index if not exists idx_guests_event on rt_guests(event_id);
 create index if not exists idx_photos_event on rt_photos(event_id);
+
+-- UPGRADE dari versi lama (tabel udah dibuat tanpa kolom multi-efek)?
+-- Jalanin baris ini aja — aman diulang:
+alter table if exists rt_events add column if not exists filter_ids jsonb not null default '[]'::jsonb;
 
 -- Catatan: server memakai SERVICE ROLE key (bypass RLS),
 -- jadi semua otorisasi dikerjakan di layer API server.

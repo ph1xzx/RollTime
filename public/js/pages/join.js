@@ -19,10 +19,12 @@ document.title = `ROLLTIME — ${ev.name}`;
 const heroImgs = ['hero-1','hero-2','hero-3','sample-3','sample-4'];
 $('#joinImg').src = `/assets/img/${heroImgs[ev.name.length % heroImgs.length]}.png`;
 
-const fx = EFFECTS.find(f => f.id === ev.filter_id) || EFFECTS[1];
+const fxIds = (Array.isArray(ev.filter_ids) && ev.filter_ids.length) ? ev.filter_ids : [ev.filter_id];
+const fxNames = fxIds.map(id => { const f = EFFECTS.find(x => x.id === id); return f ? t('fx.' + f.key) : '?'; });
+const fxLabel = fxIds.length === 1 ? fxNames[0] : `${fxNames.length}× (${fxNames[0]}, …)`;
 $('#metaChips').innerHTML = `
   <span class="info-chip">${t('jn.shots')}: <b>${ev.shots_per_guest}</b></span>
-  <span class="info-chip">${t('jn.fx')}: <b>${t('fx.' + fx.key)}</b></span>
+  <span class="info-chip">${t('jn.fx')}: <b>${fxLabel}</b></span>
   <span class="info-chip">${t('jn.ends')}: <b>${new Date(ev.ends_at).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</b></span>`;
 
 /* kalau guest udah pernah join di device ini → langsung lanjut */
