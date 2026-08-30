@@ -15,16 +15,39 @@ Estimasi total: ±15 menit.
    (kalau aktif, signup lewat API akan minta verifikasi email dan login gagal langsung).
 4. Server pakai service key → semua tabel diakses lewat API route; RLS boleh dibiarkan off.
 
-## B. Telegram storage (±5 menit)
+## B. Storage foto — pilih SATU (gratis semua)
 
-1. Chat [@BotFather](https://t.me/BotFather) → `/newbot` → ikuti → dapat **BOT TOKEN**
-2. Bikin **channel PRIVAT** (misal `rolltime-storage`) → add bot jadi **admin** (centang Post Messages)
-3. Ambil chat id:
-   - Kirim pesan apa aja di channel itu
-   - Buka `https://api.telegram.org/bot<TOKEN>/getUpdates`
-   - Cari `"chat":{"id":-100xxxxxxxxxx` → itu CHAT_ID (minus-nya ikut)
+| Opsi | Kuota gratis | Setup | Catatan |
+|---|---|---|---|
+| **A. Telegram** | Unlimited (50MB/file) | ±5 menit | Rekomendasi buat acara ratusan tamu |
+| **B. Supabase Storage** | 1GB ≈ 500-1000 foto | **0 menit** (auto) | Paling simpel — satu akun buat semua |
+| C. Disk lokal | sebesar disk | 0 | HANYA untuk demo / VPS, bukan Vercel |
+
+### Opsi A — Telegram (±5 menit)
+1. Chat [@BotFather](https://t.me/BotFather) → `/newbot` → dapat **BOT TOKEN**
+2. Bikin **channel PRIVAT** (misal `rolltime-storage`) → add bot jadi **admin** (Post Messages)
+3. Ambil chat id — salah satu cara:
+   - Kirim pesan apa aja di channel → buka `https://api.telegram.org/bot<TOKEN>/getUpdates` → cari `"chat":{"id":-100xxxxxxxxxx` (minus ikut)
+   - atau **forward 1 pesan channel ke @userinfobot** → langsung dibales id-nya
+   - alternatif: pakai **grup privat** biasa sebagai gudang (id grup = angka minus, works juga)
 4. Cara kerja: foto tamu → `sendDocument` ke channel → `file_id` disimpan di `rt_photos.storage_key`
    → galeri ambil balik via `getFile` + stream. Gratis, unlimited.
+
+### Opsi B — Supabase Storage (0 menit)
+**Nggak perlu setup apa-apa** — kalau `TELEGRAM_*` tidak diisi, adapter otomatis:
+bikin bucket privat `rolltime-photos` (sekali, saat upload pertama) → foto disimpan di situ.
+Cek di Supabase Dashboard → Storage → bucket `rolltime-photos`.
+Cocok buat event kecil-menengah. Kuota 1GB; hapus event lama buat ngosongin.
+
+### Kenapa BUKAN Google Drive?
+Bisa aja dipakai (15GB), tapi buat use-case ini boros masalah: perlu OAuth (refresh token),
+buat service account ribet (service account nggak punya kuota Drive sendiri), tiap file harus
+di-set "anyone with link", endpoint download-nya bukan CDN (pelan + kena rate-limit pas rame),
+dan rawan quota-harian. Untuk photobooth yang puluhan tamu upload barengan → berisiko macet.
+Kalau suatu saat tetap mau, bilang — adapter ke-4 bisa ditambah.
+
+### Verifikasi storage aktif
+`/api/config` → `"storageMode": "telegram"` / `"supa-storage"` / `"local"` (badge footer juga nunjukin).
 
 ## C. Vercel (±5 menit)
 
