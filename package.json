@@ -1,0 +1,16 @@
+{
+  "name": "rolltime",
+  "version": "1.0.0",
+  "description": "Digital disposable camera for events + photobooth — demo/local adapter, Supabase + Telegram ready",
+  "main": "server/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "archiver": "^7.0.1",
+    "qrcode": "^1.5.4"
+  }
+}

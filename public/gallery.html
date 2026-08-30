@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROLLTIME — Album</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111110'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23FF5C00'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="page">
+<main class="pane" style="flex:1">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-bottom:8px">
+    <h1 id="galTitle" data-i18n="gl.h"></h1>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn ghost" id="camLink" data-i18n="jn.cta"></a>
+      <button class="btn hidden" id="zipBtn" data-i18n="gl.dl.zip"></button>
+    </div>
+  </div>
+  <div class="tag-mono" id="galMeta" style="opacity:.6;margin-bottom:22px"></div>
+
+  <!-- belum reveal -->
+  <div id="preReveal" class="hidden" style="text-align:center;padding:60px 24px">
+    <div class="tag" style="color:var(--orange);letter-spacing:.2em" data-i18n="gl.hidden.a"></div>
+    <div style="margin:18px 0 8px;font-size:15px" ><span data-i18n="gl.hidden.b"></span></div>
+    <div class="big-count" id="cdownBig">00:00:00:00</div>
+    <div class="tag-mono" style="margin-top:16px;opacity:.6"><b id="soFar" style="color:var(--orange)">0</b> <span data-i18n="gl.so.count"></span></div>
+    <div class="gal-grid" style="grid-template-columns:repeat(auto-fill,minmax(90px,1fr));margin:36px auto 0;max-width:640px" id="lockGrid"></div>
+  </div>
+
+  <!-- sudah reveal -->
+  <div id="postReveal" class="hidden">
+    <div class="gal-tools">
+      <select id="guestFilter"></select>
+      <span class="tag-mono" style="opacity:.6" id="photoCount"></span>
+    </div>
+    <div class="gal-grid" id="galGrid"></div>
+    <div class="empty hidden" id="galEmpty"><div class="big" style="font-size:32px" data-i18n="gl.empty"></div></div>
+    <p style="margin-top:22px;font-size:13px;color:var(--ink-soft)" data-i18n="gl.after"></p>
+  </div>
+</main>
+
+<div class="lightbox hidden" id="lightbox">
+  <img id="lbImg" alt="">
+  <div class="meta" id="lbMeta"></div>
+  <div class="row">
+    <a class="lb-btn" id="lbDl" download data-i18n="gl.dl.one"></a>
+    <button class="lb-btn" id="lbClose">✕</button>
+  </div>
+</div>
+
+<script type="module" src="/js/pages/gallery.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROLLTIME — Masuk / Daftar</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111110'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23FF5C00'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="page">
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button id="tabLogin" data-i18n="auth.login"></button>
+      <button id="tabSignup" class="on" data-i18n="auth.signup"></button>
+    </div>
+    <h1 id="authTitle" data-i18n="auth.signup"></h1>
+    <div class="sub" id="authSub" data-i18n="auth.go.2"></div>
+    <div class="err hidden" id="authErr"></div>
+    <div class="field" id="nameField">
+      <label data-i18n="auth.name"></label>
+      <input id="inName" autocomplete="name" placeholder="Emma">
+    </div>
+    <div class="field">
+      <label data-i18n="auth.email"></label>
+      <input id="inEmail" type="email" autocomplete="email" placeholder="kamu@mail.com">
+    </div>
+    <div class="field">
+      <label data-i18n="auth.pass"></label>
+      <input id="inPass" type="password" autocomplete="new-password" placeholder="••••••••">
+    </div>
+    <button class="btn" style="width:100%;justify-content:center" id="authGo"></button>
+  </div>
+</main>
+<script type="module" src="/js/pages/auth.js"></script>
+</body>
+</html>

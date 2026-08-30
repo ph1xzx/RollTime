@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROLLTIME — Kamu Diundang</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111110'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23FF5C00'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="page">
+<main class="join-wrap">
+  <div class="join-visual">
+    <img src="/assets/img/hero-1.png" alt="" id="joinImg">
+    <div class="vcap" id="joinCap">—</div>
+  </div>
+  <div class="join-form">
+    <div class="tag-mono" style="color:var(--orange);margin-bottom:12px" data-i18n="jn.meta"></div>
+    <h1 style="font-size:clamp(30px,4.5vw,52px);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;line-height:.98;margin-bottom:18px" id="evTitle">...</h1>
+    <div class="chip-row" id="metaChips"></div>
+    <div id="joinArea">
+      <div class="field">
+        <label data-i18n="auth.name"></label>
+        <input id="guestName" data-i18n-ph="jn.name.ph" maxlength="30" autocomplete="name">
+      </div>
+      <div class="err hidden" id="joinErr"></div>
+      <button class="btn big" id="joinBtn" data-i18n="jn.cta"></button>
+    </div>
+    <div id="endedArea" class="hidden">
+      <p style="font-size:15px;line-height:1.6;margin-bottom:20px" data-i18n="jn.ended"></p>
+      <a class="btn" id="endedGalBtn" data-i18n="jn.togallery"></a>
+    </div>
+  </div>
+</main>
+<script type="module" src="/js/pages/join.js"></script>
+</body>
+</html>
