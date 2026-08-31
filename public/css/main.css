@@ -546,3 +546,99 @@ body.lv{background:#050505;color:var(--bone);overflow-x:hidden}
 .lv-wait{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px}
 .lv-wait .big{font-size:clamp(40px,9vw,110px);font-weight:900;letter-spacing:-.03em;line-height:.95;text-transform:uppercase}
 .lv-wait .sub{font-family:var(--mono);letter-spacing:.2em;color:#888;font-size:13px}
+
+/* ============================================================
+   MOBILE POLISH (≤760px) — perbaikan tampilan HP
+   ============================================================ */
+@media (max-width: 760px){
+
+  /* --- NAV jadi 2 baris: brand+akses di atas, links bisa di-scroll --- */
+  .nav{flex-wrap:wrap}
+  .nav .brand{flex:1 1 auto;border-right:1px solid var(--line-soft);padding:12px 16px;font-size:20px}
+  .nav .links{order:3;flex:0 0 100%;border-top:2px solid var(--ink);scrollbar-width:none}
+  .nav .links::-webkit-scrollbar{display:none}
+  .nav .links a{display:flex!important;padding:11px 16px;font-size:11px}
+  .nav .right{order:2;margin-left:0}
+  .nav .cta{padding:0 16px;font-size:11px}
+  .nav .lang{padding:0 12px}
+
+  /* --- HERO --- */
+  .hero .headline{padding:30px 16px 20px;font-size:clamp(40px,13.5vw,68px);line-height:.95}
+  .hero .sub{grid-template-columns:1fr;padding:0 16px 26px;gap:18px}
+  .hero-sub-meta{text-align:left}
+  .hero-sub-meta .btn{width:100%;justify-content:center}
+  .strip{grid-auto-columns:170px}
+  .strip .tile{aspect-ratio:3/4}
+  .strip-label{padding:10px 16px;font-size:11px}
+
+  /* --- SEKSI --- */
+  .section-head{padding:14px 16px}
+  .grid-3>.cell{padding:24px 16px;min-height:0}
+  .fx-grid{grid-template-columns:repeat(2,1fr)}
+  .fx-cell{min-height:118px;padding:14px 12px 12px}
+  #boothsec .booth-split{grid-template-columns:1fr!important}
+  #boothsec .cell{padding:28px 16px!important}
+  .price-cell{padding:28px 16px}
+  .faq summary{padding:16px;font-size:14px}
+  .faq .ans{padding:0 16px 18px}
+
+  /* --- FORM & WIZARD --- */
+  .pane{padding:28px 16px}
+  .pane h1{font-size:clamp(28px,8.5vw,40px)}
+  .auth-card{padding:24px 20px}
+  .type-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .type-card{padding:14px 8px;font-size:12px}
+  .steps-bar div{padding:9px 4px;font-size:9px}
+  .wiz-nav .btn{padding:14px 20px;font-size:12px}
+  /* iOS anti-zoom: input min 16px */
+  .field input,.field select,.copyrow input,.join-form input{font-size:16px}
+  .stepper button{width:44px;height:44px}
+  .stepper .val{width:60px}
+
+  /* --- DASHBOARD / MANAGE --- */
+  .ev-row{display:flex;flex-wrap:wrap;gap:8px 14px;padding:16px}
+  .ev-row .nm{width:100%}
+  .ev-row .meta{width:100%;order:3}
+  .ev-row .btn{margin-left:auto}
+  .stat .n{font-size:24px}
+  .stat{padding:14px}
+  .qr-card{width:100%;box-shadow:5px 5px 0 var(--ink)}
+  .copyrow button{padding:0 12px}
+
+  /* --- JOIN --- */
+  .join-visual{min-height:220px}
+  .join-visual .vcap{left:16px;bottom:16px;font-size:clamp(24px,7vw,36px)}
+  .join-form{padding:28px 20px;justify-content:flex-start}
+  #joinBtn,.btn.big{width:100%;justify-content:center}
+
+  /* --- CAMERA: rapikan overlap --- */
+  .cam-top{padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+  .date-stamp{bottom:148px;font-size:14px}
+  .cam-fx{bottom:88px;padding:6px 12px}
+  .cam-fx button{padding:6px 10px;font-size:9px}
+  .cam-bar{gap:26px}
+  .shutter{width:70px;height:70px}
+
+  /* --- GALLERY --- */
+  .gal-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .top-card{flex:0 0 124px}
+  .big-count{font-size:clamp(44px,17vw,80px)}
+  .lightbox img{max-height:66vh}
+
+  /* --- BOOTH --- */
+  .booth-opts{grid-template-columns:1fr 1fr;gap:10px}
+  .booth-opt{padding:12px 10px}
+  .booth-opt .t{font-size:12px}
+  .booth-stage{min-height:52vh}
+  .booth-right{padding:14px}
+  .strip-result{padding:28px 0}
+
+  /* --- MISC --- */
+  .foot-big{font-size:clamp(48px,16vw,90px)}
+  .foot-row{padding:14px 16px 22px;gap:8px;font-size:10px}
+  .toast{width:calc(100% - 32px);text-align:center;bottom:calc(20px + env(safe-area-inset-bottom))}
+  .cdown div{padding:10px 12px}
+  .cdown .n{font-size:20px}
+  .empty{padding:44px 16px}
+  .empty .big{font-size:34px}
+}
