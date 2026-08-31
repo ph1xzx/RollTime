@@ -76,6 +76,31 @@ const fail = (res, code, message = '', status = 400) => res.status(status).json(
 /* ---------------- config & auth ---------------- */
 app.get('/api/config', (req, res) => ok(res, { dbMode: db.mode, storageMode: storage.mode }));
 
+/* diagnosa koneksi Supabase (aman: nggak ada secret yang bocor, cuma status) */
+app.get('/api/diag', async (req, res) => {
+  const out = { dbMode: db.mode, storageMode: storage.mode };
+  const url = process.env.SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  try {
+    const u = new URL(url);
+    out.url_parse_ok = /^https?:$/.test(u.protocol);
+  } catch (e) { out.url_parse_ok = false; out.hint = 'SUPABASE_URL tidak valid — harus lengkap, contoh: https://abcdefgh.supabase.co'; }
+  out.service_key_format = /^eyJ[A-Za-z0-9_-]+\./.test(key) ? 'jwt_ok' : 'suspicious (bukan JWT — pastikan ini SERVICE ROLE key, bukan anon)';
+  if (out.url_parse_ok) {
+    try {
+      const r = await fetch(`${url.replace(/\/$/, '')}/auth/v1/settings`, { headers: { apikey: key } });
+      out.auth_http = r.status;           // 200 = url+key jalan; 401/403 = key salah; 404 = url salah
+      const j = await r.json().catch(() => ({}));
+      if (j.external) out.email_provider = j.external.email === true ? 'ON' : 'OFF — nyalakan di Auth → Providers → Email';
+      else if (j.error_code || j.msg) out.auth_error = j.error_code || j.msg;
+    } catch (e) {
+      out.auth_reachable = false;
+      out.fetch_error = String(e.cause?.code || e.message || e).slice(0, 100);
+    }
+  }
+  ok(res, out);
+});
+
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body || {};
