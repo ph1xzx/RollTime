@@ -256,7 +256,17 @@ app.get('/api/events/:code/photos', async (req, res) => {
   const st = eventState(ev);
   const photos = await db.listPhotos(ev.id);
   if (!st.revealed) {
-    // sebelum reveal: cuma metadata, tanpa akses file
+    // OWNER tetap bisa lihat daftar + file (buat live wall di venue & monitoring)
+    if (isOwner) {
+      return ok(res, {
+        revealed: false, owner: true, reveal_at: ev.reveal_at, total: photos.length,
+        photos: photos.map(p => ({
+          id: p.id, guest_name: p.guest_name, filter_id: p.filter_id,
+          created_at: p.created_at, url: `/api/photo/${p.id}`,
+        })),
+      });
+    }
+    // tamu: cuma metadata, tanpa akses file
     return ok(res, {
       revealed: false, reveal_at: ev.reveal_at,
       total: photos.length,
@@ -264,11 +274,14 @@ app.get('/api/events/:code/photos', async (req, res) => {
       photos: [],
     });
   }
+  const counts = await db.reactionCounts(ev.id);
+  const mineSet = g ? new Set(await db.reactionsByGuest(ev.id, g.id)) : new Set();
   ok(res, {
     revealed: true, total: photos.length,
     photos: photos.map(p => ({
       id: p.id, guest_name: p.guest_name, filter_id: p.filter_id,
       created_at: p.created_at, url: `/api/photo/${p.id}`,
+      loves: counts[p.id] || 0, loved_me: mineSet.has(p.id),
     })),
   });
 });
@@ -326,6 +339,35 @@ app.get('/api/events/:code/zip', async (req, res) => {
   archive.finalize();
 });
 
+/* ---- reactions: ❤️ toggle (tamu, pasca-reveal) ---- */
+app.post('/api/events/:code/react', async (req, res) => {
+  const ev = await db.getEventByCode(sanitizeCode(req.params.code));
+  if (!ev) return fail(res, 'not_found', '', 404);
+  const g = await authGuest(req);
+  if (!g || g.event_id !== ev.id) return fail(res, 'unauthorized', '', 401);
+  if (!eventState(ev).revealed) return fail(res, 'hidden_until_reveal', '', 403);
+  const photoId = String((req.body || {}).photo_id || '');
+  const photo = await db.getPhoto(photoId);
+  if (!photo || photo.event_id !== ev.id) return fail(res, 'photo_not_found', '', 404);
+  try {
+    const r = await db.toggleReaction(photo.id, ev.id, g.id, g.name);
+    ok(res, { loved: r.loved, count: r.count });
+  } catch (e) { console.error(e); fail(res, 'react_failed', '', 500); }
+});
+
+/* ---- leaderboard: foto paling ❤️ ---- */
+app.get('/api/events/:code/leaderboard', async (req, res) => {
+  const ev = await db.getEventByCode(sanitizeCode(req.params.code));
+  if (!ev) return fail(res, 'not_found', '', 404);
+  const g = await authGuest(req);
+  const user = await authUser(req);
+  const allowed = (user && user.id === ev.owner_id) || (g && g.event_id === ev.id);
+  if (!allowed) return fail(res, 'unauthorized', '', 401);
+  if (!eventState(ev).revealed) return fail(res, 'hidden_until_reveal', '', 403);
+  const top = await db.leaderboard(ev.id, 10);
+  ok(res, { top: top.map(p => ({ ...p, url: `/api/photo/${p.id}` })) });
+});
+
 /* QR code SVG */
 app.get('/api/qr.svg', async (req, res) => {
   const text = String(req.query.text || '').slice(0, 500);
@@ -347,6 +389,7 @@ app.get('/e/:code', page('join.html'));
 app.get('/e/:code/cam', page('camera.html'));
 app.get('/e/:code/gallery', page('gallery.html'));
 app.get('/e/:code/manage', page('manage.html'));
+app.get('/e/:code/live', page('live.html'));
 
 app.use(express.static(PUB, { maxAge: '1h', index: false }));
 app.use((req, res) => res.status(404).sendFile(path.join(PUB, 'index.html')));

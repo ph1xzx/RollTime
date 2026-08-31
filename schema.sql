@@ -56,6 +56,19 @@ create index if not exists idx_photos_event on rt_photos(event_id);
 create index if not exists idx_events_code on rt_events(code);
 create index if not exists idx_events_owner on rt_events(owner_id);
 
+-- Reactions: ❤️ per foto (1 per tamu per foto, toggle)
+create table if not exists rt_reactions (
+  id uuid primary key default gen_random_uuid(),
+  photo_id uuid not null references rt_photos on delete cascade,
+  event_id uuid not null references rt_events on delete cascade,
+  guest_id uuid references rt_guests on delete cascade,
+  guest_name text,
+  created_at timestamptz not null default now(),
+  unique(photo_id, guest_id)
+);
+create index if not exists idx_reactions_event on rt_reactions(event_id);
+create index if not exists idx_reactions_photo on rt_reactions(photo_id);
+
 -- ------------------------------------------------------------
 -- UPGRADE dari DB versi lama? Baris-baris ini aman diulang:
 alter table if exists rt_events add column if not exists filter_ids jsonb not null default '[]'::jsonb;
@@ -67,6 +80,6 @@ alter table if exists rt_photos add column if not exists size bigint not null de
 -- expose PostgREST ke client langsung, baru nyalakan + tulis policy.
 
 -- ------------------------------------------------------------
--- Verifikasi cepat (hasilnya harus 4 baris rt_*):
+-- Verifikasi cepat (hasilnya harus 5 baris rt_*):
 select table_name from information_schema.tables
 where table_schema = 'public' and table_name like 'rt_%' order by 1;

@@ -25,6 +25,7 @@ $('#guestLink').href = guestUrl;
 $('#guestLink').textContent = `/e/${ev.code} ↗`;
 $('#galleryBtn').href = `/e/${ev.code}/gallery`;
 $('#galleryBtn').textContent = 'Album →';
+$('#liveBtn').href = `/e/${ev.code}/live`;
 $('#revealAt').textContent = new Date(ev.reveal_at).toLocaleString(document.documentElement.lang === 'en' ? 'en-US' : 'id-ID');
 
 $('#copyBtn').onclick = async () => {

@@ -1,5 +1,5 @@
 import { initI18n, t } from '../i18n.js';
-import { mountNav, api, guestSess, startCountdown } from '../shared.js';
+import { mountNav, api, guestSess, startCountdown, toast } from '../shared.js';
 import { EFFECTS } from '../fx.js';
 
 mountNav({ ctaHref: '/create', ctaKey: 'nav.cta' });
@@ -56,30 +56,81 @@ async function load() {
     $('#postReveal').classList.remove('hidden');
     $('#zipBtn').classList.remove('hidden');
     renderGrid();
+    loadTop();
   }
 }
 
-function renderGrid(filterName = null) {
-  const photos = filterName ? allPhotos.filter(p => p.guest_name === filterName) : allPhotos;
+let sortMode = 'new';
+let filterName = null;
+
+function sorted(photos) {
+  const arr = [...photos];
+  if (sortMode === 'top') arr.sort((a, b) => (b.loves || 0) - (a.loves || 0));
+  return arr;
+}
+
+function renderGrid() {
+  let photos = filterName ? allPhotos.filter(p => p.guest_name === filterName) : allPhotos;
+  photos = sorted(photos);
   $('#photoCount').textContent = `${photos.length} / ${allPhotos.length} foto`;
   $('#galEmpty').classList.toggle('hidden', photos.length > 0);
   $('#galGrid').innerHTML = photos.map((p, i) => {
     const fx = EFFECTS.find(f => f.id === p.filter_id) || EFFECTS[1];
     return `<div class="ph">
       <img src="${p.url}" alt="" loading="lazy" data-idx="${i}">
+      <button class="love-btn ${p.loved_me ? 'loved' : ''}" data-love="${p.id}">❤ ${p.loves || 0}</button>
       <span class="who">${String(i + 4).padStart(2, '0')}A · ${p.guest_name || '—'} · ${t('fx.' + fx.key)}</span>
     </div>`;
   }).join('');
   $('#galGrid').querySelectorAll('img').forEach(img => {
     img.onclick = () => openLb(photos[+img.dataset.idx]);
   });
+  $('#galGrid').querySelectorAll('[data-love]').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.love;
+      btn.textContent = '…';
+      try {
+        const r = await api.req(`/api/events/${code}/react`, { method: 'POST', body: { photo_id: id }, guestToken: sess ? sess.token : null });
+        const p = allPhotos.find(x => x.id === id);
+        if (p) { p.loves = r.count; p.loved_me = r.loved; }
+        renderGrid();
+      } catch (e) {
+        toast(t('gl.love.fail'));
+        const p = allPhotos.find(x => x.id === id);
+        btn.textContent = '❤ ' + (p ? p.loves || 0 : 0);
+      }
+    };
+  });
+
+  /* sort select */
+  const sortSel = $('#sortSel');
+  sortSel.innerHTML = `<option value="new" ${sortMode === 'new' ? 'selected' : ''}>${t('gl.sort.new')}</option>
+    <option value="top" ${sortMode === 'top' ? 'selected' : ''}>${t('gl.sort.top')}</option>`;
+  sortSel.onchange = () => { sortMode = sortSel.value; renderGrid(); };
 
   /* filter dropdown */
   const names = [...new Set(allPhotos.map(p => p.guest_name))];
   const sel = $('#guestFilter');
   sel.innerHTML = `<option value="">${t('gl.filter.all')}</option>` +
     names.map(n => `<option ${n === filterName ? 'selected' : ''}>${n}</option>`).join('');
-  sel.onchange = () => renderGrid(sel.value || null);
+  sel.onchange = () => { filterName = sel.value || null; renderGrid(); };
+}
+
+/* leaderboard strip "Paling dicintai" */
+async function loadTop() {
+  try {
+    const { top } = await api.req(`/api/events/${code}/leaderboard`, sess ? { guestToken: sess.token } : {});
+    const has = Array.isArray(top) && top.length > 0;
+    $('#topWrap').classList.toggle('hidden', !has);
+    if (!has) return;
+    $('#topStrip').innerHTML = top.map((p, i) => `
+      <div class="top-card">
+        <span class="rank">#${i + 1}</span>
+        <img src="${p.url}" data-idx="${i}" alt="">
+        <div class="tmeta"><span>${p.guest_name || '—'}</span><span class="lv">❤ ${p.loves}</span></div>
+      </div>`).join('');
+    $('#topStrip').querySelectorAll('img').forEach(img => { img.onclick = () => openLb(top[+img.dataset.idx]); });
+  } catch (e) { /* diamkan */ }
 }
 
 function openLb(p) {

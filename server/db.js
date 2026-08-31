@@ -24,8 +24,9 @@ class LocalDB {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     if (fs.existsSync(DB_FILE)) {
       this.data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+      this.data.reactions ||= [];   // kompatibel db.json lama
     } else {
-      this.data = { users: [], sessions: [], events: [], guests: [], photos: [] };
+      this.data = { users: [], sessions: [], events: [], guests: [], photos: [], reactions: [] };
       this.save();
     }
   }
@@ -88,6 +89,7 @@ class LocalDB {
     this.data.events = this.data.events.filter(e => e.code !== code);
     this.data.guests = this.data.guests.filter(g => g.event_id !== ev.id);
     this.data.photos = this.data.photos.filter(p => p.event_id !== ev.id);
+    this.data.reactions = (this.data.reactions || []).filter(r => r.event_id !== ev.id);
     this.save(); return ev;
   }
 
@@ -122,7 +124,37 @@ class LocalDB {
     return this.data.photos.find(p => p.id === id) || null;
   }
   async deletePhoto(id) {
-    this.data.photos = this.data.photos.filter(p => p.id !== id); this.save();
+    this.data.photos = this.data.photos.filter(p => p.id !== id);
+    this.data.reactions = (this.data.reactions || []).filter(r => r.photo_id !== id);
+    this.save();
+  }
+
+  /* ---- reactions (❤️ per foto, 1 per tamu per foto, toggle) ---- */
+  async toggleReaction(photoId, eventId, guestId, guestName) {
+    const list = this.data.reactions;
+    const idx = list.findIndex(r => r.photo_id === photoId && r.guest_id === guestId);
+    let loved;
+    if (idx >= 0) { list.splice(idx, 1); loved = false; }
+    else { list.push({ id: uuid(), photo_id: photoId, event_id: eventId, guest_id: guestId, guest_name: guestName, created_at: nowIso() }); loved = true; }
+    this.save();
+    return { loved, count: list.filter(r => r.photo_id === photoId).length };
+  }
+  async reactionCounts(eventId) {
+    const out = {};
+    for (const r of (this.data.reactions || [])) if (r.event_id === eventId) out[r.photo_id] = (out[r.photo_id] || 0) + 1;
+    return out;
+  }
+  async reactionsByGuest(eventId, guestId) {
+    return (this.data.reactions || []).filter(r => r.event_id === eventId && r.guest_id === guestId).map(r => r.photo_id);
+  }
+  async leaderboard(eventId, limit = 10) {
+    const counts = await this.reactionCounts(eventId);
+    const photos = await this.listPhotos(eventId);
+    return photos
+      .map(p => ({ id: p.id, guest_name: p.guest_name, filter_id: p.filter_id, created_at: p.created_at, loves: counts[p.id] || 0 }))
+      .filter(p => p.loves > 0)
+      .sort((a, b) => b.loves - a.loves)
+      .slice(0, limit);
   }
   async eventCounts(eventId) {
     return {
@@ -243,6 +275,37 @@ class SupaDB {
   }
   async deletePhoto(id) {
     await this.rest(`rt_photos?id=eq.${id}`, { method: 'DELETE' });
+  }
+
+  /* ---- reactions ---- */
+  async toggleReaction(photoId, eventId, guestId, guestName) {
+    const ex = await this.rest(`rt_reactions?photo_id=eq.${photoId}&guest_id=eq.${guestId}&select=id`);
+    if (ex.length) {
+      await this.rest(`rt_reactions?id=eq.${ex[0].id}`, { method: 'DELETE' });
+    } else {
+      await this.rest('rt_reactions', { method: 'POST', body: { photo_id: photoId, event_id: eventId, guest_id: guestId, guest_name: guestName }, prefer: 'return=minimal' });
+    }
+    const all = await this.rest(`rt_reactions?photo_id=eq.${photoId}&select=id`);
+    return { loved: !ex.length, count: all.length };
+  }
+  async reactionCounts(eventId) {
+    const rows = await this.rest(`rt_reactions?event_id=eq.${eventId}&select=photo_id`);
+    const out = {};
+    for (const r of rows) out[r.photo_id] = (out[r.photo_id] || 0) + 1;
+    return out;
+  }
+  async reactionsByGuest(eventId, guestId) {
+    const rows = await this.rest(`rt_reactions?event_id=eq.${eventId}&guest_id=eq.${guestId}&select=photo_id`);
+    return rows.map(r => r.photo_id);
+  }
+  async leaderboard(eventId, limit = 10) {
+    const counts = await this.reactionCounts(eventId);
+    const photos = await this.listPhotos(eventId);
+    return photos
+      .map(p => ({ id: p.id, guest_name: p.guest_name, filter_id: p.filter_id, created_at: p.created_at, loves: counts[p.id] || 0 }))
+      .filter(p => p.loves > 0)
+      .sort((a, b) => b.loves - a.loves)
+      .slice(0, limit);
   }
   async eventCounts(eventId) {
     const guests = await this.rest(`rt_guests?event_id=eq.${eventId}&select=id`);
