@@ -93,6 +93,11 @@ app.get('/api/diag', async (req, res) => {
       const j = await r.json().catch(() => ({}));
       if (j.external) out.email_provider = j.external.email === true ? 'ON' : 'OFF — nyalakan di Auth → Providers → Email';
       else if (j.error_code || j.msg) out.auth_error = j.error_code || j.msg;
+      if ('mailer_autoconfirm' in j) {
+        out.mailer_autoconfirm = j.mailer_autoconfirm === true
+          ? 'ON — signup langsung login (ideal)'
+          : 'OFF — signup wajib klik link email. MATIKAN "Confirm email" di Authentication → Sign In / Up → Email, karena SMTP gratis Supabase kena rate limit (max ~2-3 email/jam)';
+      }
     } catch (e) {
       out.auth_reachable = false;
       out.fetch_error = String(e.cause?.code || e.message || e).slice(0, 100);
