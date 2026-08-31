@@ -113,3 +113,4 @@ $('#btnCreate').onclick = async () => {
 /* re-render text yang bergantung bahasa */
 document.querySelectorAll('[data-lang-btn]').forEach(b => b.addEventListener('click', () => setTimeout(() => { renderSteps(); }, 0)));
 renderSteps();
+import('../anim.js').then(m => m.initFormPage('.wizard > *')).catch(() => {});

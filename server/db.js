@@ -206,7 +206,12 @@ class SupaDB {
       body: JSON.stringify({ email, password }),
     });
     const j = await res.json();
-    if (!res.ok) throw Object.assign(new Error('bad_credentials'), { code: 'bad_credentials' });
+    if (!res.ok) {
+      const code = j.error_code || (j.error === 'invalid_grant' ? 'invalid_credentials' : 'login_failed');
+      const e = new Error(code === 'email_not_confirmed' ? 'email_not_confirmed' : 'bad_credentials');
+      e.code = code === 'email_not_confirmed' ? 'email_not_confirmed' : 'bad_credentials';
+      throw e;
+    }
     const u = j.user;
     return { token: j.access_token, user: { id: u.id, name: (u.user_metadata && u.user_metadata.name) || u.email, email: u.email } };
   }

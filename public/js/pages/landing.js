@@ -55,3 +55,6 @@ function renderFx(){
 }
 renderFx();
 document.querySelectorAll('[data-lang-btn]').forEach(b => b.addEventListener('click', () => setTimeout(renderFx, 0)));
+
+/* premium motion (GSAP via CDN; offline → skip, konten tetap tampil) */
+import('../anim.js').then(m => m.initLanding()).catch(() => {});

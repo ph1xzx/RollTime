@@ -81,11 +81,25 @@ app.post('/api/auth/signup', async (req, res) => {
     const { name, email, password } = req.body || {};
     if (!name || !email || !password) return fail(res, 'missing_fields');
     if (String(password).length < 4) return fail(res, 'weak_password');
-    const user = await db.createUser({ name: String(name).slice(0, 40), email, password });
-    const { token } = await db.loginUser(email, password);
-    ok(res, { token, user });
+    let user;
+    try {
+      user = await db.createUser({ name: String(name).slice(0, 40), email, password });
+    } catch (e) {
+      if (e.code === 'email_taken') return fail(res, 'email_taken', '', 409);
+      // Supabase dgn "Confirm email" ON: akun kebuat tapi sesi belum ada → kasih tahu dengan BAIK
+      if (e.code === 'confirm_email') return ok(res, { needs_confirm: true });
+      throw e;
+    }
+    try {
+      const { token } = await db.loginUser(email, password);
+      return ok(res, { token, user });
+    } catch (e2) {
+      // akun kebuat tapi auto-login gagal (rate limit dsb) → suruh login manual
+      return ok(res, { needs_login: true });
+    }
   } catch (e) {
-    fail(res, e.code || 'signup_failed', '', e.code === 'email_taken' ? 409 : 400);
+    console.error('signup error:', e.code || '', e.detail || e.message || e);
+    fail(res, 'signup_failed', e.detail || '', 500);
   }
 });
 
@@ -94,7 +108,10 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body || {};
     const { token, user } = await db.loginUser(email, password);
     ok(res, { token, user });
-  } catch (e) { fail(res, 'bad_credentials', '', 401); }
+  } catch (e) {
+    if (e.code === 'email_not_confirmed') return fail(res, 'email_not_confirmed', '', 403);
+    fail(res, 'bad_credentials', '', 401);
+  }
 });
 
 app.post('/api/auth/logout', async (req, res) => {

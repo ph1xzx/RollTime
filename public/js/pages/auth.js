@@ -35,17 +35,37 @@ $('#authGo').onclick = async () => {
   try {
     const path = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
     const body = mode === 'login' ? { email, password } : { name, email, password };
-    const { token } = await api.req(path, { method: 'POST', body });
-    api.setToken(token);
+    const res = await api.req(path, { method: 'POST', body });
+    if (res.needs_confirm) {
+      // akun kebuat tapi Supabase minta verifikasi email
+      const e = $('#authErr');
+      e.style.background = '#0E9F5D';
+      e.textContent = 'Akun kebuat ✓ Cek email buat verifikasi, abis itu login di sini.';
+      e.classList.remove('hidden');
+      mode = 'login';
+      $('#tabLogin').classList.add('on'); $('#tabSignup').classList.remove('on');
+      $('#nameField').style.display = 'none';
+      $('#authGo').textContent = t('auth.submit.login');
+      return;
+    }
+    if (res.needs_login) {
+      toast('Akun kebuat — silakan login.');
+      mode = 'login'; render();
+      return;
+    }
+    api.setToken(res.token);
     const next = new URLSearchParams(location.search).get('next') || '/create';
     location.href = next;
   } catch (err) {
     const map = {
       email_taken: 'Email ini udah terdaftar. Login aja.',
       bad_credentials: 'Email / password salah.',
+      email_not_confirmed: 'Email belum diverifikasi — cek inbox/spam dulu ya.',
       weak_password: 'Password kependekan (min 4).',
       missing_fields: 'Isi semua dulu ya.',
     };
+    const e = $('#authErr');
+    e.style.background = ''; // balik ke pink default
     showErr(map[err.message] || 'Ada error. Coba lagi.');
   } finally {
     $('#authGo').disabled = false;
@@ -53,3 +73,4 @@ $('#authGo').onclick = async () => {
 };
 document.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') $('#authGo').click(); }));
 render();
+import('../anim.js').then(m => m.initFormPage('.auth-card')).catch(() => {});

@@ -59,3 +59,4 @@ $('#joinBtn').onclick = async () => {
   }
 };
 $('#guestName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#joinBtn').click(); });
+import('../anim.js').then(m => m.initFormPage('.join-form > *, .join-visual')).catch(() => {});
