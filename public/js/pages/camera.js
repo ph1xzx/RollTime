@@ -1,4 +1,4 @@
-import { initI18n, t, applyI18n } from '../i18n.js';
+import { initI18n, t, applyI18n, getLang } from '../i18n.js';
 import { api, guestSess, toast } from '../shared.js';
 import { EFFECTS } from '../fx.js';
 import { CameraEngine, loadImageFromFile } from '../cam.js';
@@ -18,8 +18,8 @@ catch (e) { location.href = `/e/${code}`; }
 let shotsLeft = roll.shots_per_guest - roll.guest.shots_used;
 let frameNo = roll.guest.shots_used + 1;
 
-let evName = 'ROLLTIME';
-try { const { event } = await api.req(`/api/events/${code}`); evName = event.name; } catch (e) {}
+let ev = null, evName = 'ROLLTIME';
+try { const r = await api.req(`/api/events/${code}`); ev = r.event; evName = ev.name; } catch (e) {}
 $('#camEvName').textContent = evName.toUpperCase();
 $('#doneGalleryBtn').href = `/e/${code}/gallery`;
 $('#doneGalleryBtn').textContent = t('jn.togallery');
@@ -99,6 +99,8 @@ async function shoot(fromFile = null) {
     if (shotsLeft <= 0) setTimeout(showDone, 700);
   } catch (e) {
     if (e.message === 'roll_empty') showDone();
+    else if (e.message === 'not_started') showMsg(t('cam.notstarted').replace('{t}', fmtWhen(ev && ev.starts_at)), true);
+    else if (e.message === 'event_ended') showMsg(t('cam.closed'), true);
     else showMsg(t('cam.fail'));
   } finally { busy = false; }
 }
@@ -115,6 +117,15 @@ function showMsg(msg, sticky = false) {
   m.classList.remove('hidden');
   if (!sticky) setTimeout(() => m.classList.add('hidden'), 1600);
 }
+function fmtWhen(iso) {
+  if (!iso) return '?';
+  try {
+    return new Date(iso).toLocaleString(getLang() === 'en' ? 'en-GB' : 'id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return iso; }
+}
+/* belum mulai / udah tutup → kasih tahu dari awal, bukan pas udah motret */
+if (ev && !ev.started && !ev.ended) showMsg(t('cam.notstarted').replace('{t}', fmtWhen(ev.starts_at)), true);
+else if (ev && ev.ended) showMsg(t('cam.closed'), true);
 function showDone() {
   $('#camDone').classList.remove('hidden');
   $('#camMsg').classList.add('hidden');
