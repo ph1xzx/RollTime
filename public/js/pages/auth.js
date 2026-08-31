@@ -61,12 +61,13 @@ $('#authGo').onclick = async () => {
       email_taken: 'Email ini udah terdaftar. Login aja.',
       bad_credentials: 'Email / password salah.',
       email_not_confirmed: 'Email belum diverifikasi — cek inbox/spam dulu ya.',
-      weak_password: 'Password kependekan (min 4).',
+      weak_password: 'Password kependekan (min 6 karakter).',
       missing_fields: 'Isi semua dulu ya.',
     };
     const e = $('#authErr');
     e.style.background = ''; // balik ke pink default
-    showErr(map[err.message] || 'Ada error. Coba lagi.');
+    const srvMsg = err.data && err.data.message ? `Error server: ${String(err.data.message).slice(0, 90)}` : '';
+    showErr(map[err.message] || srvMsg || 'Ada error. Coba lagi.');
   } finally {
     $('#authGo').disabled = false;
   }

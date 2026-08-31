@@ -191,25 +191,43 @@ class SupaDB {
       method: 'POST', headers: this.h,
       body: JSON.stringify({ email, password, data: { name } }),
     });
-    const j = await res.json();
-    if (!res.ok) throw Object.assign(new Error(j.msg || 'signup_failed'), { code: j.error_code || 'signup_failed' });
-    // simpan profile
-    await this.rest('rt_users', { method: 'POST', body: { id: j.user.id, name, email: email.toLowerCase() }, prefer: 'return=minimal' }).catch(() => {});
-    if (!j.access_token) { // email confirmation ON — user harus verify; kembalikan info
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // teruskan pesan asli GoTrue (mis. "User already registered", "Password should be at least 6 characters")
+      let code = j.error_code || j.code || 'signup_failed';
+      if (code === 'user_already_exists' || /already (been )?registered/i.test(j.msg || '')) code = 'email_taken';
+      if (code === 'weak_password' || /password/i.test(j.msg || '') && !/user|email/i.test(j.msg || '')) {
+        if (/at least/i.test(j.msg || '')) code = 'weak_password';
+      }
+      const e = new Error(j.msg || code);
+      e.code = code;
+      e.detail = j.msg || j.error_description || `http ${res.status}`;
+      throw e;
+    }
+    // GoTrue punya 2 bentuk respons 200:
+    //   Confirm email OFF → { access_token, user: {...} }
+    //   Confirm email ON  → objek user langsung (tanpa access_token)  ← ini yg kemarin bikin 500
+    const su = j.user || j;
+    if (su && su.id) {
+      await this.rest('rt_users', { method: 'POST', body: { id: su.id, name, email: String(email).toLowerCase() }, prefer: 'return=minimal' })
+        .catch(e2 => console.error('profile insert gagal (tabel rt_users ada? RLS?):', e2.detail || e2.message || e2));
+    }
+    if (!j.access_token) { // email confirmation ON — user harus verify dulu
       const err = new Error('confirm_email'); err.code = 'confirm_email'; throw err;
     }
-    return { id: j.user.id, name, email: email.toLowerCase() };
+    return { id: su.id, name, email: String(email).toLowerCase() };
   }
   async loginUser(email, password) {
     const res = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
       method: 'POST', headers: this.h,
       body: JSON.stringify({ email, password }),
     });
-    const j = await res.json();
+    const j = await res.json().catch(() => ({}));
     if (!res.ok) {
       const code = j.error_code || (j.error === 'invalid_grant' ? 'invalid_credentials' : 'login_failed');
       const e = new Error(code === 'email_not_confirmed' ? 'email_not_confirmed' : 'bad_credentials');
       e.code = code === 'email_not_confirmed' ? 'email_not_confirmed' : 'bad_credentials';
+      e.detail = `${code}: ${j.msg || j.error_description || ''}`;
       throw e;
     }
     const u = j.user;

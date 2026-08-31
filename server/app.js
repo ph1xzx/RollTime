@@ -97,6 +97,16 @@ app.get('/api/diag', async (req, res) => {
       out.auth_reachable = false;
       out.fetch_error = String(e.cause?.code || e.message || e).slice(0, 100);
     }
+    // cek tabel schema (harus 'ok' semua; kalau 404 → jalankan schema.sql di SQL Editor)
+    out.tables = {};
+    for (const tb of ['rt_users', 'rt_events', 'rt_guests', 'rt_photos', 'rt_reactions']) {
+      try {
+        const rr = await fetch(`${url.replace(/\/$/, '')}/rest/v1/${tb}?select=*&limit=0`, {
+          headers: { apikey: key, Authorization: `Bearer ${key}` },
+        });
+        out.tables[tb] = rr.ok ? 'ok' : `http ${rr.status}${rr.status === 404 ? ' — tabel belum ada, jalankan schema.sql' : ''}`;
+      } catch (e2) { out.tables[tb] = 'fetch_error'; }
+    }
   }
   ok(res, out);
 });
@@ -113,6 +123,7 @@ app.post('/api/auth/signup', async (req, res) => {
       if (e.code === 'email_taken') return fail(res, 'email_taken', '', 409);
       // Supabase dgn "Confirm email" ON: akun kebuat tapi sesi belum ada → kasih tahu dengan BAIK
       if (e.code === 'confirm_email') return ok(res, { needs_confirm: true });
+      if (e.code === 'weak_password') return fail(res, 'weak_password'); // GoTrue min 6 karakter
       throw e;
     }
     try {
@@ -134,6 +145,7 @@ app.post('/api/auth/login', async (req, res) => {
     const { token, user } = await db.loginUser(email, password);
     ok(res, { token, user });
   } catch (e) {
+    console.error('login error:', e.code || '', e.detail || '');
     if (e.code === 'email_not_confirmed') return fail(res, 'email_not_confirmed', '', 403);
     fail(res, 'bad_credentials', '', 401);
   }
